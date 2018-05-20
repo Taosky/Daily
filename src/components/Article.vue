@@ -4,10 +4,12 @@
       <el-row type="flex" justify="center">
         <el-col :md="15">
           <div class="head">
-            <el-col :span="12">
-              <h5 @click="backHome" style="text-align: center;margin-top: 6px;font-weight: inherit;"> <i class="el-icon-back"></i></h5>
+            <el-col :span="4">
+              <el-button @click="backHome" style="width: 100%;background-color: transparent;border: none;">
+                <span class="el-icon-back"></span>
+              </el-button>
             </el-col>
-            <el-col :span="8">
+            <el-col :span="8" :offset="6">
               <table style="height: 100%;margin-top: 5px;">
                 <tr>
                   <td>
@@ -18,7 +20,7 @@
                 </tr>
               </table>
             </el-col>
-            <el-col :span="4">
+            <el-col :span="4" offset="2">
               <el-button @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-arrow-right"></span>
               </el-button>
