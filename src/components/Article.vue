@@ -5,7 +5,7 @@
         <el-col :md="15">
           <div class="head">
             <el-col :span="12">
-              <h5 @click="backHome" style="text-align: center;margin-top: 6px;font-weight: inherit;">知乎日报</h5>
+              <h5 @click="backHome" style="text-align: center;margin-top: 6px;font-weight: inherit;"> <i class="el-icon-back"></i></h5>
             </el-col>
             <el-col :span="8">
               <table style="height: 100%;margin-top: 5px;">
