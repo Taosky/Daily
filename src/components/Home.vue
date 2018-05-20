@@ -78,7 +78,7 @@
       getFullFromApi() {
         let daily_cache = localStorage.getItem('daily_cache');
         let cache = JSON.parse(daily_cache);
-        if (daily_cache && this.getNumberOfCacheBefore(cache.date) === this.dateText) {
+        if (daily_cache && cache.date === this.dateText) {
           this.stories = cache.stories
         } else {
           let vm = this;
@@ -100,7 +100,6 @@
               results.forEach(function (response) {
                 fullData.stories[response.data.id].content = response.data;
               });
-              console.log('today: ' + (vm.todayText === vm.dateText));
               if (vm.todayText === vm.dateText) {
                 axios.get('https://api.mou.science/daily/api/4/news/latest').then((response) => {
                   fullData.date = response.data.date;
@@ -156,7 +155,6 @@
         this.getFullFromApi();
       },
       changeRouter(path) {
-        console.log($(window).scrollTop())
         sessionStorage.setItem('home_pos', $(window).scrollTop());
         this.$router.push(path);
       },
@@ -167,13 +165,12 @@
       let yes = new Date();
       yes.setDate(yes.getDate() - 1);
       let yesterdayText = this.getNumberOfDate(yes);
-      console.log(this.todayText);
       let daily_cache = localStorage.getItem('daily_cache');
       let cache = JSON.parse(daily_cache);
       if (!daily_cache) {
         this.getFullFromApi();
       } else if (daily_cache) {
-        let cache_before = this.getNumberOfCacheBefore(cache.date);
+        let cache_before = cache.date;
         this.dateText = cache_before;
         if (this.todayText === cache_before || (yesterdayText === cache_before && now.getHours() < 6)) {
           this.stories = cache.stories;
