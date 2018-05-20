@@ -14,7 +14,7 @@
                 v-model="dateText"
                 type="date"
                 format="yyyy-MM-dd"
-                value-format="yyyy-MM-dd"
+                value-format="yyyyMMdd"
                 @change="handleDateChange"
                 placeholder="选择日期"
                 :editable=false
@@ -30,17 +30,17 @@
         <el-col :md="{span:14}">
           <el-row :gutter="30">
             <el-col :span="12" :md="6" :sm="8" v-for="story in stories" :key="story.id">
-              <el-card :body-style="{ padding: '0px' }">
-                <img :src="story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2')"
-                     class="image"
-                     @click="readsStory(story.info.id);">
-                <div style="padding: 14px;" @click="readsStory(story.info.id);">
-                  <span style="font-size: 15px;line-height: 1.6em;">{{ story.info.title }}</span>
-                  <div class="bottom clearfix">
-                    <time class="time">id: {{ story.info.id }}</time>
+                <el-card :body-style="{ padding: '0px' }">
+                  <img :src="story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2')"
+                       class="image"
+                       @click="readsStory(story.info.id);">
+                  <div style="padding: 14px;" @click="readsStory(story.info.id);">
+                    <span class="article-title">{{ story.info.title }}</span>
+                    <div class="bottom clearfix">
+                      <time class="time">id: {{ story.info.id }}</time>
+                    </div>
                   </div>
-                </div>
-              </el-card>
+                </el-card>
               <br>
             </el-col>
           </el-row>
@@ -59,27 +59,33 @@
       return {
         stories: null,
         fullscreenLoading: false,
+        todayText: '',
         dateText: '',
-        dateStr: '',
-        todayStr: '',
-        todayStr2: '',
         scrollPosition: 0,
       }
     },
     methods: {
+      getNumberOfCacheBefore(str) {
+        let date = new Date(str.slice(0, 4), str.slice(4, -2) - 1, str.slice(6));
+        date.setDate(date.getDate() + 1);
+        return this.getNumberOfDate(date)
+      },
+      getNumberOfDate(dat) {
+        let month = dat.getMonth() + 1;
+        let date = dat.getDate();
+        return dat.getFullYear() + '' + (month < 10 ? ('0' + month) : month) + '' + (date < 10 ? ('0' + date) : date);
+      },
       getFullFromApi() {
         let daily_cache = localStorage.getItem('daily_cache');
         let cache = JSON.parse(daily_cache);
-        let todate = this.dateStr.replace(/-/g, '');
-        let tmpdate = String(Number(todate));
-        if (daily_cache && cache.date === tmpdate) {
+        if (daily_cache && this.getNumberOfCacheBefore(cache.date) === this.dateText) {
           this.stories = cache.stories
         } else {
           let vm = this;
           vm.fullscreenLoading = true;
           let fullData = {};
           fullData.stories = {};
-          axios.get(`https://api.mou.science/daily/api/4/news/before/${todate}`).then((response) => {
+          axios.get(`https://api.mou.science/daily/api/4/news/before/${this.dateText}`).then((response) => {
             fullData.date = response.data.date;
             let stories = response.data.stories;
             let promises = [];
@@ -94,8 +100,8 @@
               results.forEach(function (response) {
                 fullData.stories[response.data.id].content = response.data;
               });
-              console.log('today: ' + (vm.todayStr === todate))
-              if (vm.todayStr === todate) {
+              console.log('today: ' + (vm.todayText === vm.dateText));
+              if (vm.todayText === vm.dateText) {
                 axios.get('https://api.mou.science/daily/api/4/news/latest').then((response) => {
                   fullData.date = response.data.date;
                   let stories_top = response.data.stories;
@@ -143,36 +149,33 @@
         this.changeRouter(`/article/${storyId}`)
       },
       getTodayData() {
-        console.log('Get Today Date');
-        this.dateStr = this.todayStr2;
+        this.dateText = this.todayText
         this.getFullFromApi();
       },
       handleDateChange(date) {
-        console.log(date);
-        this.dateStr = date;
         this.getFullFromApi();
       },
       changeRouter(path) {
         console.log($(window).scrollTop())
         sessionStorage.setItem('home_pos', $(window).scrollTop());
-          this.$router.push(path);
+        this.$router.push(path);
       },
     },
     mounted: function () {
       let now = new Date();
-      let month = now.getMonth() + 1;
-      let date = now.getDate();
-      this.dateStr = now.getFullYear() + '-' + (month < 10 ? ('0' + month) : month) + '-' + (date < 10 ? ('0' + date) : date);
-      this.todayStr = now.getFullYear() + '' + (month < 10 ? ('0' + month) : month) + '' + (date < 10 ? ('0' + date) : date);
-      this.todayStr2 = now.getFullYear() + '-' + (month < 10 ? ('0' + month) : month) + '-' + (date < 10 ? ('0' + date) : date);
+      this.todayText = this.getNumberOfDate(now);
+      let yes = new Date();
+      yes.setDate(yes.getDate() - 1);
+      let yesterdayText = this.getNumberOfDate(yes);
+      console.log(this.todayText);
       let daily_cache = localStorage.getItem('daily_cache');
-      let todate = this.dateStr.replace(/-/g, '');
-      let tmpdate = String(Number(todate));
       let cache = JSON.parse(daily_cache);
       if (!daily_cache) {
         this.getFullFromApi();
       } else if (daily_cache) {
-        if ((Number(tmpdate)) === Number(cache.date)) {
+        let cache_before = this.getNumberOfCacheBefore(cache.date);
+        this.dateText = cache_before;
+        if (this.todayText === cache_before || (yesterdayText === cache_before && now.getHours() < 6)) {
           this.stories = cache.stories;
         } else {
           this.stories = cache.stories;
@@ -184,7 +187,7 @@
           });
         }
       }
-      setTimeout(function(){
+      setTimeout(function () {
         $(window).scrollTop(parseInt(sessionStorage.getItem('home_pos')));
       }, 100);
     },
@@ -230,5 +233,15 @@
 
   .el-input__inner {
     height: 36px !important;
+  }
+
+  .article-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.6em;
+    height:3.2em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 </style>
