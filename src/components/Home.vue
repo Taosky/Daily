@@ -17,6 +17,7 @@
                 value-format="yyyyMMdd"
                 @change="handleDateChange"
                 placeholder="选择日期"
+                :picker-options="pickerOptions"
                 :editable=false
                 :clearable=false>
               </el-date-picker>
@@ -30,17 +31,17 @@
         <el-col :md="{span:14}">
           <el-row :gutter="30">
             <el-col :span="12" :md="6" :sm="8" v-for="story in stories" :key="story.id">
-                <el-card :body-style="{ padding: '0px' }">
-                  <img :src="story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2')"
-                       class="image"
-                       @click="readsStory(story.info.id);">
-                  <div style="padding: 14px;" @click="readsStory(story.info.id);">
-                    <span class="article-title">{{ story.info.title }}</span>
-                    <div class="bottom clearfix">
-                      <time class="time">id: {{ story.info.id }}</time>
-                    </div>
+              <el-card :body-style="{ padding: '0px' }">
+                <img :src="story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2')"
+                     class="image"
+                     @click="readsStory(story.info.id);">
+                <div style="padding: 14px;" @click="readsStory(story.info.id);">
+                  <span class="article-title">{{ story.info.title }}</span>
+                  <div class="bottom clearfix">
+                    <time class="time">id: {{ story.info.id }}</time>
                   </div>
-                </el-card>
+                </div>
+              </el-card>
               <br>
             </el-col>
           </el-row>
@@ -52,19 +53,33 @@
   </el-container>
 </template>
 <script>
-  import axios from 'axios'
+  import api from "../api";
 
   export default ({
     data: function () {
       return {
         stories: null,
         fullscreenLoading: false,
-        todayText: '',
+        yesterdayText: '',
         dateText: '',
         scrollPosition: 0,
+        pickerOptions:{
+          disabledDate(time) {
+            return time.getTime() > Date.now() - 86400000;
+          }
+        },
       }
     },
     methods: {
+      messageError(error) {
+        console.log(error);
+        this.$message({
+          showClose: true,
+          message: '加载失败，请重试。',
+          duration: 0,
+          type: 'error'
+        });
+      },
       getNumberOfCacheBefore(str) {
         let date = new Date(str.slice(0, 4), str.slice(4, -2) - 1, str.slice(6));
         date.setDate(date.getDate() + 1);
@@ -85,74 +100,50 @@
           vm.fullscreenLoading = true;
           let fullData = {};
           fullData.stories = {};
-          axios.get(`https://api.mou.science/daily/api/4/news/before/${this.dateText}`).then((response) => {
-            fullData.date = response.data.date;
-            let stories = response.data.stories;
-            let promises = [];
+          console.log(this.dateText);
+          api.getDay(this.dateText).then((data) => {
+            fullData.date = data.date;
+            let stories = data.stories;
+            console.log(stories.length);
+            let story_count = 0;
             stories.forEach(function (story) {
               let articleId = story.id;
               fullData.stories[articleId] = {};
               fullData.stories[articleId].info = story;
-              let story_api = `https://api.mou.science/daily/api/4/news/${articleId}`;
-              promises.push(axios.get(story_api));
-            });
-            axios.all(promises).then(function (results) {
-              results.forEach(function (response) {
-                fullData.stories[response.data.id].content = response.data;
+              api.getArticle(String(story.id)).then(data => {
+                fullData.stories[articleId].content = data;
+                story_count += 1;
+              }).catch(error => {
+                vm.fullscreenLoading = false;
+                vm.messageError(error);
               });
-              if (vm.todayText === vm.dateText) {
-                axios.get('https://api.mou.science/daily/api/4/news/latest').then((response) => {
-                  fullData.date = response.data.date;
-                  let stories_top = response.data.stories;
-                  let promises = [];
-                  stories_top.forEach(function (story_top) {
-                    let articleId_top = story_top.id;
-                    if (!fullData.stories[articleId_top]) {
-                      fullData.stories[articleId_top] = {};
-                      fullData.stories[articleId_top].info = story_top;
-                      let story_api = `https://api.mou.science/daily/api/4/news/${articleId_top}`;
-                      promises.push(axios.get(story_api));
-                    }
-
-                  });
-                  axios.all(promises).then(function (results_top) {
-                    results_top.forEach(function (response_top) {
-                      fullData.stories[response_top.data.id].content = response_top.data;
-                    });
-                    vm.stories = fullData.stories;
-                    localStorage.setItem('daily_cache', JSON.stringify(fullData));
-                    vm.fullscreenLoading = false;
-                  });
-                });
-              }
-              else {
+            });
+            let interval = setInterval(() => {
+              if (story_count === stories.length) {
                 vm.stories = fullData.stories;
                 localStorage.setItem('daily_cache', JSON.stringify(fullData));
                 vm.fullscreenLoading = false;
+                clearInterval(interval);
               }
-            });
+            }, 500);
           }).catch(function (error) {
             vm.fullscreenLoading = false;
-            vm.$message({
-              showClose: true,
-              message: '加载失败，请重试。',
-              duration: 0,
-              type: 'error'
-            });
-            console.log(error);
+            vm.messageError(error);
           });
         }
       },
-
       readsStory(storyId) {
         this.changeRouter(`/article/${storyId}`)
       },
       getTodayData() {
-        this.dateText = this.todayText
+        this.dateText = this.yesterdayText;
         this.getFullFromApi();
       },
       handleDateChange(date) {
         this.getFullFromApi();
+      },
+      datePickDisable(time) {
+        return time >= Date.now();
       },
       changeRouter(path) {
         sessionStorage.setItem('home_pos', $(window).scrollTop());
@@ -161,24 +152,28 @@
     },
     mounted: function () {
       let now = new Date();
-      this.todayText = this.getNumberOfDate(now);
       let yes = new Date();
       yes.setDate(yes.getDate() - 1);
-      let yesterdayText = this.getNumberOfDate(yes);
+      this.yesterdayText = this.getNumberOfDate(yes);
+      let beforeYes = new Date();
+      beforeYes.setDate(yes.getDate() - 2);
+      let beforeyesterdayText = this.getNumberOfDate(beforeYes);
       let daily_cache = localStorage.getItem('daily_cache');
-      let cache = JSON.parse(daily_cache);
       if (!daily_cache) {
+        this.dateText = this.yesterdayText;
         this.getFullFromApi();
       } else if (daily_cache) {
-        let cache_before = cache.date;
-        this.dateText = cache_before;
-        if (this.todayText === cache_before || (yesterdayText === cache_before && now.getHours() < 6)) {
+        let cache = JSON.parse(daily_cache);
+        let cache_date = cache.date;
+        this.dateText = cache_date;
+        //
+        if (this.yesterdayText === cache_date || (beforeyesterdayText === cache_date && now.getHours() < 6)) {
           this.stories = cache.stories;
         } else {
           this.stories = cache.stories;
           this.$notify({
             title: '注意：',
-            message: '此缓存非今天的日报，戳此通知可更新。',
+            message: `${cache_date}缓存，戳此通知更新。`,
             onClick: this.getTodayData,
             duration: 2888,
           });
@@ -236,7 +231,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.6em;
-    height:3.2em;
+    height: 3.2em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
