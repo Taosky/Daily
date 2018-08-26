@@ -13,8 +13,9 @@
               <table style="height: 100%;margin-top: 5px; width: 100%;">
                 <tr>
                   <td>
-                    <span class="artile-title"
-                          v-show="titleShow">{{ this.currentStory.title }}</span>
+                    <span
+                      style="display: -webkit-box;-webkit-box-orient: vertical; -webkit-line-clamp:1;overflow: hidden;text-overflow: ellipsis;color: #3f3f3f;text-align: center;word-break: break-all;"
+                      v-show="titleShow">{{ this.currentStory.title }}</span>
                   </td>
                 </tr>
               </table>
@@ -132,7 +133,7 @@
       },
       handleScroll() {
         this.titleShow = window.scrollY > 276;
-        this.scrollOpacity = window.scrollY * 0.005;
+        this.scrollOpacity = window.scrollY * 0.004;
       }
     },
     watch: {
@@ -154,17 +155,6 @@
   }
 </script>
 <style>
-  .artile-title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp:1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #3f3f3f;
-    text-align: center;
-    word-break: break-all;
-  }
-
   .head {
     border-radius: 4px;
     background: #d3dce6;
