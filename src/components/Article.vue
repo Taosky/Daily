@@ -3,24 +3,23 @@
     <el-header style="padding: 0;height: 38px;width: 100%;position: fixed;top:0;z-index: 1000;">
       <el-row type="flex" justify="center">
         <el-col :md="15">
-          <div class="head">
+          <div class="head" :style="{opacity:scrollOpacity}">
             <el-col :span="4">
               <el-button @click="backHome" style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-back"></span>
               </el-button>
             </el-col>
-            <el-col :span="8" :offset="6">
-              <table style="height: 100%;margin-top: 5px;">
+            <el-col :span="16">
+              <table style="height: 100%;margin-top: 5px; width: 100%;">
                 <tr>
                   <td>
-                    <a style="color:black;text-decoration:underline"
-                       target="_blank"
-                       :href="currentStory.viewMore">查看问题</a>
+                    <span class="artile-title"
+                          v-show="titleShow">{{ this.currentStory.title }}</span>
                   </td>
                 </tr>
               </table>
             </el-col>
-            <el-col :span="4" offset="2">
+            <el-col :span="4">
               <el-button @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-arrow-right"></span>
               </el-button>
@@ -29,13 +28,13 @@
         </el-col>
       </el-row>
     </el-header>
-    <div style="margin-top: 21px; padding: 15px;">
+    <div style="margin-top: -18px; padding: 15px;">
       <div class="row">
         <transition name="fade">
           <div class="col-12" @click="articleClick" v-if="currentStoryId">
             <div v-html="currentStory.body">
             </div>
-            <el-button class="back-to-top" size="small" @click="backToTop">To top</el-button>
+            <!--<el-button class="back-to-top" size="small" @click="backToTop">To top</el-button>-->
           </div>
         </transition>
       </div>
@@ -58,12 +57,14 @@
         clickCount: 0,
         clickTimer: null,
         errorMessage: '',
-        fullscreenLoading: false
+        fullscreenLoading: false,
+        scrollOpacity: 0,
+        titleShow: false,
       }
     },
     methods: {
       getContent(storyId) {
-        setTimeout(function(){
+        setTimeout(function () {
           $(window).scrollTop(0);
         }, 100);
         let daily_cache = localStorage.getItem('daily_cache');
@@ -77,19 +78,18 @@
           this.currentStory.title = story.title;
           this.currentStory.image = story.image;
           let viewMores = story.body.match(/class="view-more"><a href="(.+?)">/);
-          if (viewMores){
+          if (viewMores) {
             this.currentStory.viewMore = viewMores[1];
-          }else{
+          } else {
             this.currentStory.viewMore = '#';
           }
           if (localStorage.getItem('daily_vue_first_use') !== 'false') {
             this.$notify({
               title: '操作提示：',
               message: '1.双击随机一篇文章， ' +
-              '2.点击左上角“知乎日报”可返回列表， ' +
-              '3.浏览器后退有效， ' +
-              '4.数据已存储到本地，日期变化时重新加载， ' +
-              '5.查看非当天日报请使用后退返回，点击左上角会重载当天数据。',
+                '2.点击左上角“知乎日报”可返回列表， ' +
+                '3.浏览器后退有效， ' +
+                '4.数据已存储到本地，日期变化时重新加载。',
               duration: 0,
             });
             localStorage.setItem('daily_vue_first_use', 'false');
@@ -129,6 +129,10 @@
             {path: `/article/${randomAid}`}
           )
         }
+      },
+      handleScroll() {
+        this.titleShow = window.scrollY > 276;
+        this.scrollOpacity = window.scrollY * 0.005;
       }
     },
     watch: {
@@ -143,13 +147,24 @@
       }
     },
     mounted: function () {
+      window.addEventListener('scroll', this.handleScroll);
       this.currentStoryId = this.$route.params.aid;
       this.getContent(this.$route.params.aid);
-
     }
   }
 </script>
 <style>
+  .artile-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp:1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3f3f3f;
+    text-align: center;
+    word-break: break-all;
+  }
+
   .head {
     border-radius: 4px;
     background: #d3dce6;
