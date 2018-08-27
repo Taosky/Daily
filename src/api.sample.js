@@ -10,7 +10,9 @@ function get(url) {
       } else {
         reject(response)
       }
-    })
+    }).catch(error => {
+      reject(error);
+    });
   })
 }
 
