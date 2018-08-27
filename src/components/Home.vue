@@ -71,6 +71,7 @@
       }
     },
     methods: {
+      //出错提示
       messageError(error) {
         console.log(error);
         this.$message({
@@ -114,6 +115,7 @@
                 fullData.stories[articleId].content = data;
                 story_count += 1;
               }).catch(error => {
+                console.log(error);
                 vm.fullscreenLoading = false;
                 vm.messageError(error);
               });
@@ -127,6 +129,7 @@
               }
             }, 500);
           }).catch(function (error) {
+            console.log(error);
             vm.fullscreenLoading = false;
             vm.messageError(error);
           });
@@ -166,7 +169,7 @@
         let cache = JSON.parse(daily_cache);
         let cache_date = cache.date;
         this.dateText = cache_date;
-        //
+        //解决凌晨日期还为前一天的问题
         if (this.yesterdayText === cache_date || (beforeyesterdayText === cache_date && now.getHours() < 6)) {
           this.stories = cache.stories;
         } else {
@@ -179,6 +182,7 @@
           });
         }
       }
+      //滚动条定位
       setTimeout(function () {
         $(window).scrollTop(parseInt(sessionStorage.getItem('home_pos')));
       }, 100);
