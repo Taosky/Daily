@@ -3,7 +3,7 @@
     <el-header style="padding: 0;height: 38px;width: 100%;position: fixed;top:0;z-index: 1000;">
       <el-row type="flex" justify="center">
         <el-col :md="15">
-          <div class="head" :style="{opacity:scrollOpacity}">
+          <div class="head" :style="{background:scrollBg}">
             <el-col :span="4">
               <el-button @click="backHome" style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-back"></span>
@@ -59,7 +59,7 @@
         clickTimer: null,
         errorMessage: '',
         fullscreenLoading: false,
-        scrollOpacity: 0,
+        scrollBg: 'rgba(211,220,230,0)',
         titleShow: false,
       }
     },
@@ -75,7 +75,7 @@
           story = cache.stories[storyId].content;
           this.currentStory.body = story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,
             '<img class="content-image" src="https://images.weserv.nl/?url=$2"').replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,
-            '<img class="avatar" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2'): ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
+            '<img class="avatar" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
           this.currentStory.img_source = story['image_source'];
           this.currentStory.title = story.title;
           this.currentStory.image = story.image;
@@ -134,7 +134,7 @@
       },
       handleScroll() {
         this.titleShow = window.scrollY > 276;
-        this.scrollOpacity = window.scrollY * 0.004;
+        this.scrollBg = `rgba(211,220,230,${window.scrollY * 0.004})`;
       }
     },
     watch: {
