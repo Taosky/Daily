@@ -74,7 +74,8 @@
           let story = null;
           story = cache.stories[storyId].content;
           this.currentStory.body = story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,
-            '<img class="content-image" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2')}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
+            '<img class="content-image" src="https://images.weserv.nl/?url=$2"').replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,
+            '<img class="avatar" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2'): ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
           this.currentStory.img_source = story['image_source'];
           this.currentStory.title = story.title;
           this.currentStory.image = story.image;

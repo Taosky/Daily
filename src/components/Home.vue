@@ -32,7 +32,7 @@
           <el-row :gutter="30">
             <el-col :span="12" :md="6" :sm="8" v-for="story in stories" :key="story.id">
               <el-card :body-style="{ padding: '0px' }">
-                <img :src="story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2')"
+                <img :src="story.content.image ? story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2'): ''"
                      class="image"
                      @click="readsStory(story.info.id);">
                 <div style="padding: 14px;" @click="readsStory(story.info.id);">
