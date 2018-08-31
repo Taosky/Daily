@@ -36,14 +36,62 @@
             <div v-html="currentStory.body">
             </div>
             <!--<el-button class="back-to-top" size="small" @click="backToTop">To top</el-button>-->
+            <el-button v-if="commentButton" class="back-to-top" size="small" @click="goToComments">查看评论</el-button>
           </div>
         </transition>
       </div>
     </div>
+    <el-footer style="height: auto;">
+      <div style="margin-top: -18px;">
+        <div class="col-12">
+          <div class="comments-container main-wrap">
+            <div class="top-bar">
+              <div class="top-bar-title">
+                {{ commentCount }}条评论
+              </div>
+              <div class="top-bar-option">
+                <el-checkbox style="margin-right:10px;font-size: 14px;" v-model="commentLong" @change="getComment(commentSort)">长评论</el-checkbox>
+                <button v-if="commentSort==='likes'" @click="getComment('time')" class="option-button">
+                  <i class="el-icon-sort"></i>切换为时间排序
+                </button>
+                <button v-else @click="getComment('likes')" class="option-button">
+                  <i class="el-icon-sort"></i>切换为默认排序
+                </button>
+              </div>
+            </div>
+            <div style="text-align: center;" v-if="commentLoading">
+              <i style="font-size:24px;" class="el-icon-loading"></i>
+            </div>
+            <div style="text-align: center;" v-if="commentCount===0 && !commentLoading">
+              <p style="color: darkgray;">暂无评论</p>
+            </div>
+            <div class="comment-l">
+              <div class="comment-i" v-for="comment in comments">
+                <div>
+                  <div class="comment-i-meta">
+                    <span class="user-avatar"><img width="24" height="24" :src="comment.avatar"/></span>
+                    <span class="user-name">{{comment.author}}</span>
+                    <span class="time" :timestamp="comment.time*1000">{{ getDayFromToday(comment.time*1000)}} 天前</span>
+                  </div>
+                  <div class="comment-i-content">
+                    {{ comment.content }}
+                  </div>
+                  <div class="comment-i-footer">
+                    <span style="color: #8590a6;font-size: 15px;" class="far fa-thumbs-up"> {{comment.likes !== 0?comment.likes:'' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-footer>
   </el-container>
 </template>
 
 <script>
+  import api from '../api'
+
   export default {
     data: function () {
       return {
@@ -54,6 +102,12 @@
           viewMore: '',
           title: ''
         },
+        comments: [],
+        commentCount: 0,
+        commentSort: 'likes',
+        commentLoading: 'false',
+        commentButton: true,
+        commentLong: false,
         currentStoryId: '',
         clickCount: 0,
         clickTimer: null,
@@ -64,7 +118,23 @@
       }
     },
     methods: {
-      getContent(storyId) {
+      //出错提示
+      messageError(error) {
+        console.log(error);
+        this.$message({
+          showClose: true,
+          message: '加载失败，请重试。',
+          duration: 0,
+          type: 'error'
+        });
+      },
+      //距今天天数
+      getDayFromToday(time) {
+        const current_time = Date.parse(new Date());
+        return Math.round((current_time - time) / (24 * 3600 * 1000))
+      },
+      getContent() {
+        const storyId = this.currentStoryId;
         setTimeout(function () {
           $(window).scrollTop(0);
         }, 100);
@@ -73,6 +143,7 @@
         if (daily_cache) {
           let story = null;
           story = cache.stories[storyId].content;
+          //替换图片链接
           this.currentStory.body = story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,
             '<img class="content-image" src="https://images.weserv.nl/?url=$2"').replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,
             '<img class="avatar" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
@@ -97,10 +168,35 @@
             localStorage.setItem('daily_vue_first_use', 'false');
           }
         }
-
+      },
+      getComment(sort = 'likes') {
+        let vm = this;
+        vm.comments = [];
+        vm.commentSort = sort;
+        vm.commentLoading = true;
+        let post_data = {article_id: this.currentStoryId, order_by: vm.commentSort};
+        //长评
+        if (this.commentLong) {
+          post_data.type = 'long';
+        }
+        api.searchComment(post_data).then((data) => {
+          vm.commentCount = data.length;
+          data.forEach((one_comment,) => {
+            one_comment.avatar = `https://images.weserv.nl/?url=${one_comment.avatar}`;
+          });
+          vm.comments = data;
+          vm.commentLoading = false;
+        }).catch(error => {
+          console.log(error);
+          vm.commentLoading = false;
+          vm.messageError(error);
+        });
       },
       backToTop() {
         $('html,body').animate({scrollTop: 0}, 400);
+      },
+      goToComments() {
+        $('html,body').animate({scrollTop: $('.comments-container')[0].offsetTop - 50}, 400);
       },
       articleClick() {
         this.clickCount++;
@@ -133,8 +229,12 @@
         }
       },
       handleScroll() {
+        //标题显隐
         this.titleShow = window.scrollY > 276;
+        //头部头透明度
         this.scrollBg = `rgba(211,220,230,${window.scrollY * 0.004})`;
+        // 评论按钮显隐
+        this.commentButton = window.scrollY < $('.comments-container')[0].offsetTop - 600;
       }
     },
     watch: {
@@ -151,7 +251,8 @@
     mounted: function () {
       window.addEventListener('scroll', this.handleScroll);
       this.currentStoryId = this.$route.params.aid;
-      this.getContent(this.$route.params.aid);
+      this.getContent();
+      this.getComment();
     }
   }
 </script>
@@ -165,10 +266,83 @@
 
   .back-to-top {
     position: fixed;
-    right: 15px;
-    bottom: 20px;
+    right: 5%;
+    bottom: 8%;
     opacity: 0.8;
   }
 
+  .comments-container {
+    margin-bottom: 40px;
+  }
+
+  .top-bar {
+    margin-bottom: 20px;
+  }
+
+  .top-bar-title {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    font-synthesis: style;
+    color: #1a1a1a;
+  }
+
+  .top-bar-option {
+    display: inline-block;
+    float: right;
+  }
+
+  .comment-i {
+    margin-bottom: 20px;
+  }
+
+  .comment-i-meta {
+    position: relative;
+    height: 27px;
+    padding-right: 3px;
+    padding-left: 1px;
+    margin-bottom: 6px;
+    line-height: 24px;
+  }
+
+  .comment-i-meta .user-name, .comment-i-meta .user-avatar {
+    color: inherit;
+    text-decoration: none;
+    line-height: 24px;
+    font-size: 15px;
+    padding: 2px;
+  }
+
+  .comment-i-meta .time {
+    float: right;
+    font-size: 14px;
+    color: #8590a6;
+  }
+
+  .comment-i-content {
+    margin-bottom: 6px;
+    line-height: 25px;
+  }
+
+  .comment-i:before {
+    position: relative;
+    top: -10px;
+    left: 0;
+    right: 0;
+    display: block;
+    border-bottom: 1px solid #e0d6d65c;
+    content: "";
+  }
+
+  .option-button {
+    display: inline-block;
+    border: none;
+    font-size: 14px;
+    color: #8590a6;
+    text-align: center;
+    cursor: pointer;
+    background: transparent none;
+    outline: none;
+  }
 
 </style>
