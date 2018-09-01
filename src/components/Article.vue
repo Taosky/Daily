@@ -50,7 +50,9 @@
                 {{ commentCount }}条评论
               </div>
               <div class="top-bar-option">
-                <el-checkbox style="margin-right:10px;font-size: 14px;" v-model="commentLong" @change="getComment(commentSort)">长评论</el-checkbox>
+                <el-checkbox style="margin-right:10px;font-size: 14px;" v-model="commentLong"
+                             @change="getComment(commentSort)">长评论
+                </el-checkbox>
                 <button v-if="commentSort==='likes'" @click="getComment('time')" class="option-button">
                   <i class="el-icon-sort"></i>切换为时间排序
                 </button>
@@ -144,9 +146,11 @@
           let story = null;
           story = cache.stories[storyId].content;
           //替换图片链接
-          this.currentStory.body = story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,
-            '<img class="content-image" src="https://images.weserv.nl/?url=$2"').replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,
-            '<img class="avatar" src="https://images.weserv.nl/?url=$2"').replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
+          this.currentStory.body = story.body
+            .replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,'<img class="content-image" src="https://images.weserv.nl/?url=$2"')
+            .replace(/<img src="(https|http):\/\/(pic.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
+            .replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,'<img class="avatar" src="https://images.weserv.nl/?url=$2"')
+            .replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
           this.currentStory.img_source = story['image_source'];
           this.currentStory.title = story.title;
           this.currentStory.image = story.image;
@@ -234,18 +238,17 @@
         //头部头透明度
         this.scrollBg = `rgba(211,220,230,${window.scrollY * 0.004})`;
         // 评论按钮显隐
-        this.commentButton = window.scrollY < $('.comments-container')[0].offsetTop - 600;
+        const commentNode = $('.comments-container')[0];
+        if (commentNode) {
+          this.commentButton = window.scrollY < commentNode.offsetTop - 600;
+        }
       }
     },
     watch: {
       $route: function () {
-        let vm = this;
-        this.currentStoryId = '';
-        setTimeout(function () {
-          vm.currentStoryId = vm.$route.params.aid;
-        }, 300);
-
-        this.getContent(this.$route.params.aid);
+        this.currentStoryId = this.$route.params.aid;
+        this.getContent();
+        this.getComment();
       }
     },
     mounted: function () {
