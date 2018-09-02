@@ -35,16 +35,17 @@
         <el-col :md="{span:14}">
           <el-row :gutter="30">
             <el-col :span="24" :md="12" :sm="12" v-for="story in stories" :key="story.id">
-              <el-card :body-style="{ padding: '0px' }">
-                <div style="display: inline-block; width:20%;vertical-align: top;">
+              <el-card style="width:100%;height: 5.5em;"
+                       :body-style="{ padding: '0px',height: '5.5em',width:'100%',display:'table' }">
+                <div style="display:table-cell;vertical-align: top; width:5.5em;">
                   <img
                     :src="story.content.image ? story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2'): ''"
                     class="image"
                     @click="readsStory(story.info.id)">
                 </div>
-                <div style="padding: 4%; width:70%; display: inline-block" @click="readsStory(story.info.id)">
+                <div style="display:table-cell;    padding: 0.6em;" @click="readsStory(story.info.id)">
                   <span class="article-title">{{ story.info.title }}</span>
-                  <div class="bottom clearfix">
+                  <div class="clearfix">
                     <time class="time">{{ story.info.authors.slice(0,2).join(' • ')}}</time>
                     <time style="float: right;" class="time">{{ story.info.date }}</time>
                   </div>
@@ -205,11 +206,6 @@
     color: #999;
   }
 
-  .bottom {
-    margin-top: 13px;
-    line-height: 12px;
-  }
-
   .button {
     padding: 0;
     float: right;
@@ -219,6 +215,10 @@
     width: 100%;
     display: inline-block;
     vertical-align: top;
+  }
+
+  .clearfix {
+    line-height: 1.6em;
   }
 
   .clearfix:before,

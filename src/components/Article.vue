@@ -225,11 +225,11 @@
         }
       },
       backHome() {
-        if (this.cacheName === 'daily_cache'){
+        if (this.cacheName === 'daily_cache') {
           this.$router.push({name: 'Home'})
-        } else if(this.cacheName === 'search_cache'){
+        } else if (this.cacheName === 'search_cache') {
           const cache = JSON.parse(localStorage.getItem(this.cacheName));
-          this.$router.push({name: 'Search',params:cache.searchOptions})
+          this.$router.push({name: 'Search', params: cache.searchOptions})
         }
       },
       randomArticle() {
@@ -241,9 +241,9 @@
             aids.push(aid);
           }
           let randomAid = aids[Math.floor(Math.random() * aids.length)];
-          if (this.cacheName === 'daily_cache'){
+          if (this.cacheName === 'daily_cache') {
             this.$router.push({path: `/article/${randomAid}`})
-          } else if(this.cacheName === 'search_cache'){
+          } else if (this.cacheName === 'search_cache') {
             this.$router.push({path: `/articleSearch/${randomAid}`})
           }
         }

@@ -6,10 +6,10 @@
         <el-col :md="15">
           <div class="head">
             <el-col :span="19">
-              <el-col :span="14">
+              <el-col :span="13">
                 <h5 style="text-align: center;margin-top: 0; line-height: 37px;font-weight: inherit;">知乎日报</h5>
               </el-col>
-              <el-col :span="10">
+              <el-col :span="11">
                 <el-date-picker
                   size="small"
                   style="width:100%;"
@@ -26,10 +26,10 @@
               </el-col>
             </el-col>
             <!--search-->
-            <el-col :span="2" :offset="1">
+            <el-col :span="1" :offset="1">
               <el-popover
                 placement="bottom"
-                width="390"
+                width="290"
                 trigger="click">
                 <div style="margin-top: 15px;">
                   <el-input style="margin-bottom: 5px;" placeholder="请输入内容" v-model="searchOptions.query"
