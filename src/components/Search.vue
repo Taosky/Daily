@@ -112,10 +112,11 @@
       getArticleFromApi(fullData, stories) {
         let vm = this;
         let story_count = 0;
-        stories.forEach(function (story) {
+        stories.forEach(function (story, index) {
           let articleId = story.id;
           fullData.stories[articleId] = {};
           fullData.stories[articleId].info = story;
+          fullData.stories[articleId].index = index;
           api.getArticle(String(story.id)).then(data => {
             fullData.stories[articleId].content = data;
             story_count += 1;
@@ -127,7 +128,20 @@
         });
         let interval = setInterval(() => {
           if (story_count === stories.length) {
-            vm.stories = fullData.stories;
+            const sortedStorieKeys =  Object.keys(fullData.stories).sort(function (a, b) {
+              return fullData.stories[a].index - fullData.stories[b].index;
+            });
+            //重新排序搜索结果
+            let sortedStories = {};
+            console.log(sortedStorieKeys);
+            sortedStorieKeys.forEach((key) =>{
+              sortedStories[key] = (fullData.stories[key]);
+            });
+            fullData.stories = sortedStories;
+            vm.stories = sortedStories;
+            console.log(vm.stories);
+            // vm.stories = fullData.stories
+            //保存到localStorage
             localStorage.setItem('search_cache', JSON.stringify(fullData));
             vm.loading = false;
             clearInterval(interval);
