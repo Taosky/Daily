@@ -5,7 +5,8 @@
         <el-col :md="15">
           <div class="head" :style="{background:scrollBg}">
             <el-col :span="4">
-              <el-button @click="backHome" style="width: 100%;background-color: transparent;border: none;">
+              <el-button @click="backHome"
+                         style="color:#409EFF;width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-back"></span>
               </el-button>
             </el-col>
@@ -73,7 +74,7 @@
                   <div class="comment-i-meta">
                     <span class="user-avatar"><img width="24" height="24" :src="comment.avatar"/></span>
                     <span class="user-name">{{comment.author}}</span>
-                    <span class="time" :timestamp="comment.time*1000">{{ getDayFromToday(comment.time*1000)}} 天前</span>
+                    <span class="time" :timestamp="comment.time*1000">{{ getFromTime(comment.time*1000)}} </span>
                   </div>
                   <div class="comment-i-content">
                     {{ comment.content }}
@@ -97,6 +98,7 @@
   export default {
     data: function () {
       return {
+        cacheName: '',
         currentStory: {
           body: '',
           img_source: '',
@@ -130,26 +132,33 @@
           type: 'error'
         });
       },
-      //距今天天数
-      getDayFromToday(time) {
+      //时间
+      getFromTime(time) {
         const current_time = Date.parse(new Date());
-        return Math.round((current_time - time) / (24 * 3600 * 1000))
+        const day = Math.round((current_time - time) / (24 * 3600 * 1000));
+        if (day === 0) {
+          return `${Math.round((current_time - time) / (3600 * 1000))} 小时前`;
+        } else if (day > 365) {
+          return `${Math.round(day / 365)} 年前`;
+        }
+        return `${day} 天前`;
+
       },
       getContent() {
         const storyId = this.currentStoryId;
         setTimeout(function () {
           $(window).scrollTop(0);
         }, 100);
-        let daily_cache = localStorage.getItem('daily_cache');
+        let daily_cache = localStorage.getItem(this.cacheName);
         let cache = JSON.parse(daily_cache);
         if (daily_cache) {
           let story = null;
           story = cache.stories[storyId].content;
           //替换图片链接
           this.currentStory.body = story.body
-            .replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g,'<img class="content-image" src="https://images.weserv.nl/?url=$2"')
+            .replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
             .replace(/<img src="(https|http):\/\/(pic.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
-            .replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g,'<img class="avatar" src="https://images.weserv.nl/?url=$2"')
+            .replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g, '<img class="avatar" src="https://images.weserv.nl/?url=$2"')
             .replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
           this.currentStory.img_source = story['image_source'];
           this.currentStory.title = story.title;
@@ -184,11 +193,11 @@
           post_data.type = 'long';
         }
         api.searchComment(post_data).then((data) => {
-          vm.commentCount = data.length;
-          data.forEach((one_comment,) => {
+          vm.commentCount = data.comments.length;
+          data.comments.forEach((one_comment,) => {
             one_comment.avatar = `https://images.weserv.nl/?url=${one_comment.avatar}`;
           });
-          vm.comments = data;
+          vm.comments = data.comments;
           vm.commentLoading = false;
         }).catch(error => {
           console.log(error);
@@ -216,10 +225,15 @@
         }
       },
       backHome() {
-        this.$router.push({path: '/'})
+        if (this.cacheName === 'daily_cache'){
+          this.$router.push({name: 'Home'})
+        } else if(this.cacheName === 'search_cache'){
+          const cache = JSON.parse(localStorage.getItem(this.cacheName));
+          this.$router.push({name: 'Search',params:cache.searchOptions})
+        }
       },
       randomArticle() {
-        let daily_cache = localStorage.getItem('daily_cache');
+        let daily_cache = localStorage.getItem(this.cacheName);
         let cache = JSON.parse(daily_cache);
         if (daily_cache) {
           let aids = [];
@@ -227,9 +241,11 @@
             aids.push(aid);
           }
           let randomAid = aids[Math.floor(Math.random() * aids.length)];
-          this.$router.push(
-            {path: `/article/${randomAid}`}
-          )
+          if (this.cacheName === 'daily_cache'){
+            this.$router.push({path: `/article/${randomAid}`})
+          } else if(this.cacheName === 'search_cache'){
+            this.$router.push({path: `/articleSearch/${randomAid}`})
+          }
         }
       },
       handleScroll() {
@@ -242,20 +258,27 @@
         if (commentNode) {
           this.commentButton = window.scrollY < commentNode.offsetTop - 600;
         }
-      }
-    },
-    watch: {
-      $route: function () {
+      },
+      init() {
+        if (this.$route.name === 'Article') {
+          this.cacheName = 'daily_cache';
+        } else if (this.$route.name === 'ArticleSearch') {
+          this.cacheName = 'search_cache';
+        }
         this.currentStoryId = this.$route.params.aid;
         this.getContent();
         this.getComment();
       }
     },
+
+    watch: {
+      $route: function () {
+        this.init();
+      }
+    },
     mounted: function () {
+      this.init();
       window.addEventListener('scroll', this.handleScroll);
-      this.currentStoryId = this.$route.params.aid;
-      this.getContent();
-      this.getComment();
     }
   }
 </script>
