@@ -169,11 +169,9 @@
           vm.fullscreenLoading = true;
           let fullData = {};
           fullData.stories = {};
-          console.log(this.dateText);
           api.getDay(this.dateText).then((data) => {
             fullData.date = data.date;
             let stories = data.stories;
-            console.log(stories.length);
             this.getArticleFromApi(fullData, stories)
           }).catch(function (error) {
             console.log(error);

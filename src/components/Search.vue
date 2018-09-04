@@ -43,7 +43,7 @@
                     class="image"
                     @click="readsStory(story.info.id)">
                 </div>
-                <div style="display:table-cell;    padding: 0.6em;" @click="readsStory(story.info.id)">
+                <div style="display:table-cell;padding: 0.6em;" @click="readsStory(story.info.id)">
                   <span class="article-title">{{ story.info.title }}</span>
                   <div class="clearfix">
                     <time class="time">{{ story.info.authors.slice(0,2).join(' • ')}}</time>
@@ -79,9 +79,22 @@
         },
         limit: 15,
         total: 0,
-        articleType: '',
         loading: false,
         scrollPosition: 0,
+      }
+    },
+    computed:{
+      articleType: function () {
+        const type = this.searchOptions.type;
+        if (type === 'xiaoshi') {
+          return '小事';
+        }
+        if (type === 'dawu') {
+          return '大误';
+        }
+        if (type === 'xiache') {
+         return '瞎扯';
+        }
       }
     },
     methods: {
@@ -133,13 +146,11 @@
             });
             //重新排序搜索结果
             let sortedStories = {};
-            console.log(sortedStorieKeys);
             sortedStorieKeys.forEach((key) =>{
               sortedStories[key] = (fullData.stories[key]);
             });
             fullData.stories = sortedStories;
             vm.stories = sortedStories;
-            console.log(vm.stories);
             // vm.stories = fullData.stories
             //保存到localStorage
             localStorage.setItem('search_cache', JSON.stringify(fullData));
@@ -157,7 +168,6 @@
           this.total = data.total;
           fullData.total = data.total;
           const stories = data.articles;
-          console.log(stories.length);
           this.getArticleFromApi(fullData, stories)
         }).catch(function (error) {
           console.log(error);
@@ -188,7 +198,6 @@
       init() {
         //获取参数
         this.searchOptions = this.$route.params;
-        this.getArticleType();
         //获取缓存，否则请求数据
         let search_cache = localStorage.getItem('search_cache');
         const cache = JSON.parse(search_cache);
