@@ -10,16 +10,8 @@
                 <span class="el-icon-back"></span>
               </el-button>
             </el-col>
-            <el-col :span="16">
-              <table style="height: 100%;margin-top: 5px; width: 100%;">
-                <tr>
-                  <td>
-                    <span
-                      style="display: -webkit-box;-webkit-box-orient: vertical; -webkit-line-clamp:1;overflow: hidden;text-overflow: ellipsis;color: #3f3f3f;text-align: center;word-break: break-all;"
-                      v-show="titleShow">{{ this.currentStory.title }}</span>
-                  </td>
-                </tr>
-              </table>
+            <el-col :span="16" style="line-height: 35px;text-align: center">
+              <span class="article_title" v-show="titleShow">{{ this.currentStory.title }}</span>
             </el-col>
             <el-col :span="4">
               <el-button @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
@@ -74,13 +66,14 @@
                   <div class="comment-i-meta">
                     <span class="user-avatar"><img width="24" height="24" :src="comment.avatar"/></span>
                     <span class="user-name">{{comment.author}}</span>
-                    <span class="time" :timestamp="comment.time*1000">{{ getFromTime(comment.time*1000)}} </span>
+                    <span class="time" :timestamp="comment.time*1000">{{ getFromTime(comment.time * 1000)}} </span>
                   </div>
                   <div class="comment-i-content">
                     {{ comment.content }}
                   </div>
                   <div class="comment-i-footer">
-                    <span style="color: #8590a6;font-size: 15px;" class="far fa-thumbs-up"> {{comment.likes !== 0?comment.likes:'' }}</span>
+                    <span style="color: #8590a6;font-size: 15px;"
+                          class="far fa-thumbs-up"> {{comment.likes !== 0 ? comment.likes : '' }}</span>
                   </div>
                 </div>
               </div>
@@ -173,9 +166,9 @@
             this.$notify({
               title: '操作提示：',
               message: '1.双击随机一篇文章， ' +
-                '2.点击左上角“知乎日报”可返回列表， ' +
-                '3.浏览器后退有效， ' +
-                '4.数据已存储到本地，日期变化时重新加载。',
+              '2.点击左上角“知乎日报”可返回列表， ' +
+              '3.浏览器后退有效， ' +
+              '4.数据已存储到本地，日期变化时重新加载。',
               duration: 0,
             });
             localStorage.setItem('daily_vue_first_use', 'false');
@@ -369,6 +362,18 @@
     cursor: pointer;
     background: transparent none;
     outline: none;
+  }
+
+  .article_title {
+    display: inline-block;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3f3f3f;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
   }
 
 </style>
