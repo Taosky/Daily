@@ -74,7 +74,7 @@
                   <div class="comment-i-meta">
                     <span class="user-avatar"><img width="24" height="24" :src="comment.avatar"/></span>
                     <span class="user-name">{{comment.author}}</span>
-                    <span class="time" :timestamp="comment.time*1000">{{ getFromTime(comment.time*1000)}} </span>
+                    <span class="time" :timestamp="comment.time*1000">{{ fromTime(comment.time*1000)}} </span>
                   </div>
                   <div class="comment-i-content">
                     {{ comment.content }}
@@ -89,11 +89,14 @@
         </div>
       </div>
     </el-footer>
+    <el-row element-loading-text="加载中......"
+            v-loading.fullscreen.lock="fullscreenLoading"></el-row>
   </el-container>
 </template>
 
 <script>
   import api from '../api'
+  import {getFromTime, replaceBody, sleep} from '../uutils'
 
   export default {
     data: function () {
@@ -103,7 +106,6 @@
           body: '',
           img_source: '',
           image: '',
-          viewMore: '',
           title: ''
         },
         comments: [],
@@ -132,43 +134,27 @@
           type: 'error'
         });
       },
-      //时间
-      getFromTime(time) {
-        const current_time = Date.parse(new Date());
-        const day = Math.round((current_time - time) / (24 * 3600 * 1000));
-        if (day === 0) {
-          return `${Math.round((current_time - time) / (3600 * 1000))} 小时前`;
-        } else if (day > 365) {
-          return `${Math.round(day / 365)} 年前`;
-        }
-        return `${day} 天前`;
-
+      fromTime(timestamp) {
+        return getFromTime(timestamp)
       },
+      showStory(story) {
+        //替换图片链接
+        this.currentStory.body = replaceBody(story);
+        this.currentStory.img_source = story['image_source'];
+        this.currentStory.title = story.title;
+        this.currentStory.image = story.image;
+      },
+      //缓存或网络获取内容
       getContent() {
+        let vm = this;
         const storyId = this.currentStoryId;
         setTimeout(function () {
           $(window).scrollTop(0);
         }, 100);
         let daily_cache = localStorage.getItem(this.cacheName);
         let cache = JSON.parse(daily_cache);
-        if (daily_cache) {
-          let story = null;
-          story = cache.stories[storyId].content;
-          //替换图片链接
-          this.currentStory.body = story.body
-            .replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
-            .replace(/<img src="(https|http):\/\/(pic.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
-            .replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g, '<img class="avatar" src="https://images.weserv.nl/?url=$2"')
-            .replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
-          this.currentStory.img_source = story['image_source'];
-          this.currentStory.title = story.title;
-          this.currentStory.image = story.image;
-          let viewMores = story.body.match(/class="view-more"><a href="(.+?)">/);
-          if (viewMores) {
-            this.currentStory.viewMore = viewMores[1];
-          } else {
-            this.currentStory.viewMore = '#';
-          }
+        if (daily_cache && cache.stories[storyId]) {
+          vm.showStory(cache.stories[storyId].content);
           if (localStorage.getItem('daily_vue_first_use') !== 'false') {
             this.$notify({
               title: '操作提示：',
@@ -180,6 +166,17 @@
             });
             localStorage.setItem('daily_vue_first_use', 'false');
           }
+        } else {
+          this.fullscreenLoading = true;
+          api.getArticle(storyId).then((data) => {
+            vm.showStory(data);
+            sleep(300).then(() => {
+              vm.fullscreenLoading = false;
+            });
+          }).catch((error) => {
+            vm.messageError(error);
+            vm.fullscreenLoading = false;
+          });
         }
       },
       getComment(sort = 'likes') {
@@ -200,7 +197,6 @@
           vm.comments = data.comments;
           vm.commentLoading = false;
         }).catch(error => {
-          console.log(error);
           vm.commentLoading = false;
           vm.messageError(error);
         });
@@ -247,6 +243,9 @@
             this.$router.push({path: `/articleSearch/${randomAid}`})
           }
         }
+        else {
+          console.log('no more article');
+        }
       },
       handleScroll() {
         //标题显隐
@@ -258,7 +257,8 @@
         if (commentNode) {
           this.commentButton = window.scrollY < commentNode.offsetTop - 600;
         }
-      },
+      }
+      ,
       init() {
         if (this.$route.name === 'Article') {
           this.cacheName = 'daily_cache';
