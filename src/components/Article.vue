@@ -10,19 +10,11 @@
                 <span class="el-icon-back"></span>
               </el-button>
             </el-col>
-            <el-col :span="16">
-              <table style="height: 100%;margin-top: 5px; width: 100%;">
-                <tr>
-                  <td>
-                    <span
-                      style="display: -webkit-box;-webkit-box-orient: vertical; -webkit-line-clamp:1;overflow: hidden;text-overflow: ellipsis;color: #3f3f3f;text-align: center;word-break: break-all;"
-                      v-show="titleShow">{{ this.currentStory.title }}</span>
-                  </td>
-                </tr>
-              </table>
+            <el-col :span="16" style="line-height: 35px;text-align: center">
+              <span class="article_title" v-show="titleShow">{{ this.currentStory.title }}</span>
             </el-col>
             <el-col :span="4">
-              <el-button @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
+              <el-button v-show="titleShow" @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-arrow-right"></span>
               </el-button>
             </el-col>
@@ -369,6 +361,18 @@
     cursor: pointer;
     background: transparent none;
     outline: none;
+  }
+
+  .article_title {
+    display: inline-block;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3f3f3f;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
   }
 
 </style>
