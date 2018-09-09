@@ -62,13 +62,13 @@
       <el-row type="flex" justify="center">
         <el-col :md="{span:14}">
           <el-row :gutter="30">
-            <el-col :span="12" :md="6" :sm="8" v-for="story in stories" :key="story.id">
+            <el-col :span="12" :md="6" :sm="8" v-for="story in stories" :key="story.info.id">
               <el-card :body-style="{ padding: '0px' }">
                 <img
-                  :src="story.content.image ? story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2'): ''"
+                  :src="story.content.image?story.content.image:''"
                   class="image"
-                  @click="readsStory(story.info.id)">
-                <div style="padding: 14px;" @click="readsStory(story.info.id)">
+                  @click="readStory(story.info.id)">
+                <div style="padding: 14px;" @click="readStory(story.info.id)">
                   <span class="article-title">{{ story.info.title }}</span>
                   <div class="bottom clearfix">
                     <time class="time">id: {{ story.info.id }}</time>
@@ -91,11 +91,12 @@
 </template>
 <script>
   import api from "../api";
+  import {replaceContentImg, getDay, sleep} from '../uutils';
 
   export default ({
     data: function () {
       return {
-        stories: null,
+        stories: [],
         searchOptions: {
           query: '',
           author: '',
@@ -103,9 +104,10 @@
           page: 1
         },
         fullscreenLoading: false,
-        yesterdayText: '',
         dateText: '',
+        //滚动条定位
         scrollPosition: 0,
+        //日期选择范围
         pickerOptions: {
           disabledDate(time) {
             return time.getTime() < 1372608000000 || time.getTime() > Date.now() - 86400000;
@@ -116,6 +118,7 @@
     methods: {
       //出错提示
       messageError(error) {
+        vm.fullscreenLoading = false;
         console.log(error);
         this.$message({
           showClose: true,
@@ -124,104 +127,71 @@
           type: 'error'
         });
       },
-      getNumberOfCacheBefore(str) {
-        let date = new Date(str.slice(0, 4), str.slice(4, -2) - 1, str.slice(6));
-        date.setDate(date.getDate() + 1);
-        return this.getNumberOfDate(date)
-      },
-      getNumberOfDate(dat) {
-        let month = dat.getMonth() + 1;
-        let date = dat.getDate();
-        return dat.getFullYear() + '' + (month < 10 ? ('0' + month) : month) + '' + (date < 10 ? ('0' + date) : date);
-      },
       getArticleFromApi(fullData, stories) {
         let vm = this;
-        let story_count = 0;
+        fullData.stories = [];
+        let promises = [];
         stories.forEach(function (story) {
-          let articleId = story.id;
-          fullData.stories[articleId] = {};
-          fullData.stories[articleId].info = story;
-          api.getArticle(String(story.id)).then(data => {
-            fullData.stories[articleId].content = data;
-            story_count += 1;
-          }).catch(error => {
-            console.log(error);
-            vm.fullscreenLoading = false;
-            vm.messageError(error);
-          });
+          promises.push(api.getArticle(String(story.id)));
         });
-        let interval = setInterval(() => {
-          if (story_count === stories.length) {
-            vm.stories = fullData.stories;
-            localStorage.setItem('daily_cache', JSON.stringify(fullData));
+        Promise.all(promises).then((values) => {
+          values.forEach((content, index) => {
+            content.image = replaceContentImg(content);
+            fullData.stories.push({content:content, info:stories[index]});
+          });
+          vm.stories = fullData.stories;
+          localStorage.setItem('daily_cache', JSON.stringify(fullData));
+          sleep(300).then(() => {
             vm.fullscreenLoading = false;
-            clearInterval(interval);
-          }
-        }, 500);
+          });
+        }).catch((error) => {
+          vm.messageError(error);
+        });
       },
       getFullFromApi() {
-        let daily_cache = localStorage.getItem('daily_cache');
-        let cache = JSON.parse(daily_cache);
-        if (daily_cache && cache.date === this.dateText) {
-          this.stories = cache.stories
-        } else {
-          let vm = this;
-          vm.fullscreenLoading = true;
-          let fullData = {};
-          fullData.stories = {};
-          api.getDay(this.dateText).then((data) => {
-            fullData.date = data.date;
-            let stories = data.stories;
-            this.getArticleFromApi(fullData, stories)
-          }).catch(function (error) {
-            console.log(error);
-            vm.fullscreenLoading = false;
-            vm.messageError(error);
-          });
-        }
+        let vm = this;
+        vm.fullscreenLoading = true;
+        let fullData = {};
+        api.getDay(this.dateText).then((data) => {
+          fullData.date = data.date;
+          this.getArticleFromApi(fullData, data.stories)
+        }).catch(function (error) {
+          vm.messageError(error);
+        });
       },
       searchArticle() {
         this.$router.push({name: 'Search', params: this.searchOptions});
       },
-      readsStory(storyId) {
-        this.changeRouter(`/article/${storyId}`)
-      },
-      getTodayData() {
-        this.dateText = this.yesterdayText;
-        this.getFullFromApi();
-      },
-      handleDateChange(date) {
-        this.getFullFromApi();
-      },
-      changeRouter(path) {
+      //跳转文章
+      readStory(storyId) {
+        //保存滚动条位置
         sessionStorage.setItem('home_pos', $(window).scrollTop());
-        this.$router.push(path);
+        this.$router.push(`/article/${storyId}`)
+      },
+      getLatest() {
+        this.$notify.closeAll();
+        this.dateText = getDay(-1);
+        this.getFullFromApi();
+      },
+      handleDateChange() {
+        this.getFullFromApi();
       },
       init() {
-        let now = new Date();
-        let yes = new Date();
-        yes.setDate(yes.getDate() - 1);
-        this.yesterdayText = this.getNumberOfDate(yes);
-        let beforeYes = new Date();
-        beforeYes.setDate(yes.getDate() - 2);
-        let beforeyesterdayText = this.getNumberOfDate(beforeYes);
+        const yesterdayText = getDay(-1);
         let daily_cache = localStorage.getItem('daily_cache');
         if (!daily_cache) {
-          this.dateText = this.yesterdayText;
+          this.dateText = yesterdayText;
           this.getFullFromApi();
         } else if (daily_cache) {
           let cache = JSON.parse(daily_cache);
           let cache_date = cache.date;
           this.dateText = cache_date;
-          //解决凌晨日期还为前一天的问题
-          if (this.yesterdayText === cache_date || (beforeyesterdayText === cache_date && now.getHours() < 6)) {
-            this.stories = cache.stories;
-          } else {
-            this.stories = cache.stories;
+          this.stories = cache.stories;
+          if (yesterdayText !== cache_date){
             this.$notify({
               title: '注意：',
               message: `${cache_date}缓存，戳此通知更新。`,
-              onClick: this.getTodayData,
+              onClick: this.getLatest,
               duration: 2888,
             });
           }
@@ -264,6 +234,12 @@
   .image {
     width: 100%;
     display: block;
+  }
+  .image::after {
+    width: 100%;
+    display: block;
+    content: "";
+    background: url("https://img01.mou.science/no_image.png") no-repeat center;;
   }
 
   .clearfix:before,

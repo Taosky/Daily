@@ -72,7 +72,7 @@
                     {{ comment.content }}
                   </div>
                   <div class="comment-i-footer">
-                    <span style="color: #8590a6;font-size: 15px;" class="far fa-thumbs-up"> {{comment.likes !== 0?comment.likes:'' }}</span>
+                    <span style="color: #8590a6;font-size: 15px;" class="far fa-thumbs-up"> {{comment.likes}}</span>
                   </div>
                 </div>
               </div>
@@ -113,11 +113,13 @@
         fullscreenLoading: false,
         scrollBg: 'rgba(211,220,230,0)',
         titleShow: false,
+        commentOn: false
       }
     },
     methods: {
       //出错提示
       messageError(error) {
+        vm.fullscreenLoading = false;
         console.log(error);
         this.$message({
           showClose: true,
@@ -136,6 +138,15 @@
         this.currentStory.title = story.title;
         this.currentStory.image = story.image;
       },
+      getIndexOfCache(storyId,cache){
+        let result = null;
+        cache.stories.forEach((story,index) =>{
+          if (story.info.id===Number(storyId)){
+            result = index;
+          }
+        });
+        return result;
+      },
       //缓存或网络获取内容
       getContent() {
         let vm = this;
@@ -145,8 +156,9 @@
         }, 100);
         let daily_cache = localStorage.getItem(this.cacheName);
         let cache = JSON.parse(daily_cache);
-        if (daily_cache && cache.stories[storyId]) {
-          vm.showStory(cache.stories[storyId].content);
+        const storyIndex = this.getIndexOfCache(storyId,cache);
+        if (daily_cache && storyIndex) {
+          vm.showStory(cache.stories[storyIndex].content);
           if (localStorage.getItem('daily_vue_first_use') !== 'false') {
             this.$notify({
               title: '操作提示：',
@@ -167,11 +179,11 @@
             });
           }).catch((error) => {
             vm.messageError(error);
-            vm.fullscreenLoading = false;
           });
         }
       },
       getComment(sort = 'likes') {
+        this.commentOn = true;
         let vm = this;
         vm.comments = [];
         vm.commentSort = sort;
@@ -225,14 +237,14 @@
         let cache = JSON.parse(daily_cache);
         if (daily_cache) {
           let aids = [];
-          for (let aid in cache.stories) {
-            aids.push(aid);
+          for (let index in cache.stories) {
+            aids.push(index);
           }
-          let randomAid = aids[Math.floor(Math.random() * aids.length)];
+          let randomIndex = aids[Math.floor(Math.random() * aids.length)];
           if (this.cacheName === 'daily_cache') {
-            this.$router.push({path: `/article/${randomAid}`})
+            this.$router.push({path: `/article/${cache.stories[randomIndex].info.id}`})
           } else if (this.cacheName === 'search_cache') {
-            this.$router.push({path: `/articleSearch/${randomAid}`})
+            this.$router.push({path: `/articleSearch/${cache.stories[randomIndex].info.id}`})
           }
         }
         else {
@@ -242,9 +254,13 @@
       handleScroll() {
         //标题显隐
         this.titleShow = window.scrollY > 276;
+        //评论延迟加载
+        if (window.scrollY > 300 && !this.commentOn){
+          this.getComment();
+        }
         //头部头透明度
         this.scrollBg = `rgba(211,220,230,${window.scrollY * 0.004})`;
-        // 评论按钮显隐
+        //评论按钮显隐
         const commentNode = $('.comments-container')[0];
         if (commentNode) {
           this.commentButton = window.scrollY < commentNode.offsetTop - 600;
@@ -252,6 +268,7 @@
       }
       ,
       init() {
+        this.commentOn = false;
         if (this.$route.name === 'Article') {
           this.cacheName = 'daily_cache';
         } else if (this.$route.name === 'ArticleSearch') {
@@ -259,7 +276,6 @@
         }
         this.currentStoryId = this.$route.params.aid;
         this.getContent();
-        this.getComment();
       }
     },
 

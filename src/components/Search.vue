@@ -39,7 +39,7 @@
                        :body-style="{ padding: '0px',height: '5.5em',width:'100%',display:'table' }">
                 <div style="display:table-cell;vertical-align: top; width:5.5em;">
                   <img
-                    :src="story.content.image ? story.content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2'): ''"
+                    :src="story.content.image"
                     class="image"
                     @click="readsStory(story.info.id)">
                 </div>
@@ -66,11 +66,12 @@
 </template>
 <script>
   import api from "../api";
+  import {replaceContentImg} from "../uutils"
 
   export default ({
     data: function () {
       return {
-        stories: null,
+        stories: [],
         searchOptions: {
           query: '',
           author: '',
@@ -83,7 +84,7 @@
         scrollPosition: 0,
       }
     },
-    computed:{
+    computed: {
       articleType: function () {
         const type = this.searchOptions.type;
         if (type === 'xiaoshi') {
@@ -93,13 +94,14 @@
           return '大误';
         }
         if (type === 'xiache') {
-         return '瞎扯';
+          return '瞎扯';
         }
-      }
+      },
     },
     methods: {
       //出错提示
       messageError(error) {
+        vm.loading = false;
         console.log(error);
         this.$message({
           showClose: true,
@@ -108,56 +110,25 @@
           type: 'error'
         });
       },
-      getArticleType() {
-        const type = this.searchOptions.type;
-        let typeStr = '';
-        if (type === 'xiaoshi') {
-          typeStr = '小事'
-        }
-        if (type === 'dawu') {
-          typeStr = '大误'
-        }
-        if (type === 'xiache') {
-          typeStr = '瞎扯'
-        }
-        this.articleType = typeStr;
-      },
       getArticleFromApi(fullData, stories) {
         let vm = this;
-        let story_count = 0;
-        stories.forEach(function (story, index) {
-          let articleId = story.id;
-          fullData.stories[articleId] = {};
-          fullData.stories[articleId].info = story;
-          fullData.stories[articleId].index = index;
-          api.getArticle(String(story.id)).then(data => {
-            fullData.stories[articleId].content = data;
-            story_count += 1;
-          }).catch(error => {
-            console.log(error);
-            vm.loading = false;
-            vm.messageError(error);
-          });
+        fullData.stories = [];
+        let promises = [];
+        stories.forEach(function (story) {
+          promises.push(api.getArticle(String(story.id)));
         });
-        let interval = setInterval(() => {
-          if (story_count === stories.length) {
-            const sortedStorieKeys =  Object.keys(fullData.stories).sort(function (a, b) {
-              return fullData.stories[a].index - fullData.stories[b].index;
-            });
-            //重新排序搜索结果
-            let sortedStories = {};
-            sortedStorieKeys.forEach((key) =>{
-              sortedStories[key] = (fullData.stories[key]);
-            });
-            fullData.stories = sortedStories;
-            vm.stories = sortedStories;
-            // vm.stories = fullData.stories
-            //保存到localStorage
-            localStorage.setItem('search_cache', JSON.stringify(fullData));
-            vm.loading = false;
-            clearInterval(interval);
-          }
-        }, 500);
+
+        Promise.all(promises).then((values) => {
+          values.forEach((content, index) => {
+            content.image = replaceContentImg(content);
+            fullData.stories.push({content:content, info:stories[index]});
+          });
+          vm.stories = fullData.stories;
+          localStorage.setItem('search_cache', JSON.stringify(fullData));
+          vm.loading = false;
+        }).catch((error) => {
+          this.messageError(error);
+        });
       },
       searchArticle() {
         this.stories = [];
@@ -170,8 +141,6 @@
           const stories = data.articles;
           this.getArticleFromApi(fullData, stories)
         }).catch(function (error) {
-          console.log(error);
-          vm.loading = false;
           vm.messageError(error);
         });
       },
