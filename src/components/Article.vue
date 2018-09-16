@@ -14,7 +14,8 @@
               <span class="article_title" v-show="titleShow">{{ this.currentStory.title }}</span>
             </el-col>
             <el-col :span="4">
-              <el-button v-show="titleShow" @click="randomArticle" style="width: 100%;background-color: transparent;border: none;">
+              <el-button v-show="titleShow" @click="randomArticle"
+                         style="width: 100%;background-color: transparent;border: none;">
                 <span class="el-icon-arrow-right"></span>
               </el-button>
             </el-col>
@@ -138,10 +139,10 @@
         this.currentStory.title = story.title;
         this.currentStory.image = story.image;
       },
-      getIndexOfCache(storyId,cache){
+      getIndexOfCache(storyId, cache) {
         let result = null;
-        cache.stories.forEach((story,index) =>{
-          if (story.info.id===Number(storyId)){
+        cache.stories.forEach((story, index) => {
+          if (story.info.id === Number(storyId)) {
             result = index;
           }
         });
@@ -156,8 +157,8 @@
         }, 100);
         let daily_cache = localStorage.getItem(this.cacheName);
         let cache = JSON.parse(daily_cache);
-        const storyIndex = this.getIndexOfCache(storyId,cache);
-        if (daily_cache && storyIndex) {
+        const storyIndex = this.getIndexOfCache(storyId, cache);
+        if (daily_cache && storyIndex !== null) {
           vm.showStory(cache.stories[storyIndex].content);
           if (localStorage.getItem('daily_vue_first_use') !== 'false') {
             this.$notify({
@@ -255,7 +256,7 @@
         //标题显隐
         this.titleShow = window.scrollY > 276;
         //评论延迟加载
-        if (window.scrollY > 300 && !this.commentOn){
+        if (window.scrollY > 300 && !this.commentOn) {
           this.getComment();
         }
         //头部头透明度
