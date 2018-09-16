@@ -101,7 +101,7 @@
     methods: {
       //出错提示
       messageError(error) {
-        vm.loading = false;
+        this.loading = false;
         console.log(error);
         this.$message({
           showClose: true,

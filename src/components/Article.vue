@@ -119,7 +119,7 @@
     methods: {
       //出错提示
       messageError(error) {
-        vm.fullscreenLoading = false;
+        this.fullscreenLoading = false;
         console.log(error);
         this.$message({
           showClose: true,
@@ -171,7 +171,7 @@
             localStorage.setItem('daily_vue_first_use', 'false');
           }
         } else {
-          this.fullscreenLoading = true;
+          vm.fullscreenLoading = true;
           api.getArticle(storyId).then((data) => {
             vm.showStory(data);
             sleep(300).then(() => {

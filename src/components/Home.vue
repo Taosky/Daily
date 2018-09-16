@@ -118,7 +118,7 @@
     methods: {
       //出错提示
       messageError(error) {
-        vm.fullscreenLoading = false;
+        this.fullscreenLoading = false;
         console.log(error);
         this.$message({
           showClose: true,
