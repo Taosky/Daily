@@ -110,7 +110,7 @@
         //日期选择范围
         pickerOptions: {
           disabledDate(time) {
-            return time.getTime() < 1372608000000 || time.getTime() > Date.now() - 86400000;
+            return time.getTime() < 1368892800000 || time.getTime() > Date.now() - 86400000;
           }
         },
       }
