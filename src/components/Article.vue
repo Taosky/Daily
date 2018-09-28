@@ -158,7 +158,7 @@
         let daily_cache = localStorage.getItem(this.cacheName);
         let storyIndex = null;
         if (daily_cache) {
-          storyIndex = this.getIndexOfCache(storyId, cache);
+          storyIndex = this.getIndexOfCache(storyId, JSON.parse(daily_cache));
         }
         if (daily_cache && storyIndex !== null) {
           let cache = JSON.parse(daily_cache);
