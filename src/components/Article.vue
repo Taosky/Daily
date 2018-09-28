@@ -156,9 +156,12 @@
           $(window).scrollTop(0);
         }, 100);
         let daily_cache = localStorage.getItem(this.cacheName);
-        let cache = JSON.parse(daily_cache);
-        const storyIndex = this.getIndexOfCache(storyId, cache);
+        let storyIndex = null;
+        if (daily_cache) {
+          storyIndex = this.getIndexOfCache(storyId, cache);
+        }
         if (daily_cache && storyIndex !== null) {
+          let cache = JSON.parse(daily_cache);
           vm.showStory(cache.stories[storyIndex].content);
           if (localStorage.getItem('daily_vue_first_use') !== 'false') {
             this.$notify({
