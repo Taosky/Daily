@@ -1,14 +1,32 @@
 //替换文章图片
 function replaceBody(story) {
-  return story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
+  let body = story.body.replace(/<img class="content-image" src="(https|http):\/\/(.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
     .replace(/<img src="(https|http):\/\/(pic.*?)"/g, '<img class="content-image" src="https://images.weserv.nl/?url=$2"')
     .replace(/<img class="avatar" src="(https|http):\/\/(.*?)"/g, '<img class="avatar" src="https://images.weserv.nl/?url=$2"')
-    .replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${story.image ? story.image.replace(/(https|http):\/\/(.*?)/, 'https://images.weserv.nl/?url=$2') : ''}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
+
+  let topImage = 'https://img01.mou.science/no_image.png'
+  if (story.image) {
+    if (story.image.startsWith('https://images.weserv.nl/')) {
+      topImage = story.image
+    } else {
+      topImage = story.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2');
+    }
+  }
+  body = body.replace('<div class="img-place-holder"></div>', `<div class="img-place-holder" style="height: auto;"><div class="img-wrap">\n<h1 class="headline-title">${story.title}</h1>\n<span class="img-source">${story['image_source']}</span>\n<img src="${topImage}" alt="">\n<div class="img-mask"></div>\n</div></div>`);
+  return body
 }
 
 //替换头图
 function replaceContentImg(content) {
-  return content.image ? content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2') : 'https://img01.mou.science/no_image.png';
+  if (content.image) {
+    if (content.image.startsWith('https://images.weserv.nl/')) {
+      return content.image;
+    } else {
+      return content.image.replace(/(https|http):\/\/(.*?)/g, 'https://images.weserv.nl/?url=$2');
+    }
+  } else {
+    return 'https://img01.mou.science/no_image.png';
+  }
 }
 
 //时间
@@ -43,5 +61,5 @@ function sleep(time) {
 }
 
 
-export {getFromTime,replaceContentImg, getDay, replaceBody, sleep};
+export {getFromTime, replaceContentImg, getDay, replaceBody, sleep};
 
